@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.bakilalasaei.twa",
+        "sha256_cert_fingerprints": ["78:B3:35:1D:2B:1D:E7:B8:29:22:94:2A:0F:D0:AD:11:79:03:96:5D:7A:18:AE:43:60:4D:85:F1:82:54:D9:75"]
+      }
+    }]
