@@ -117,7 +117,7 @@
       <div class="file-actions">
         <input type="file" id="input-attach-files" multiple style="display:none" />
         <button id="btn-attach-files" class="btn neutral">📎 إرفاق ملفات</button>
-        <button id="view-attachments-btn" class="btn neutral">عرض المرفقات (0)</button>
+        <button id="btn-view-attachments" class="btn neutral">عرض المرفقات (0)</button>
       </div>
 
       <button id="btn-delete-item" class="btn danger">🗑️ نقل إلى سلة المحذوفات</button>
@@ -139,6 +139,9 @@
 
   <div id="content-manager-area" class="modal-content" style="display:none; margin: 20px auto; max-width: 800px; border: 1px solid #d4af37;">
     <div class="panel-title">🧩 لوحة تحرير الفهرس</div>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button onclick="openTrashModal()" class="btn neutral">🗑️ سلة المحذوفات</button>
+    </div>
     <div id="editable-index"></div>
   </div>
 
