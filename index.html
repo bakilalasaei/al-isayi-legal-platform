@@ -85,46 +85,31 @@
       
       <div id="admin-index-list" class="admin-index-list-container"></div>
       
-      <div class="panel-title" style="margin-top: 20px;">
-        📬 إدارة المراسلات الواردة
-      </div>
+      <div class="panel-title" style="margin-top: 20px;">📬 إدارة المراسلات الواردة</div>
       <button id="btn-show-uploads" class="btn primary">عرض المراسلات</button>
       <button id="btn-delete-uploads" class="btn danger">🗑️ حذف جميع المراسلات</button>
       
       <div class="divider"></div>
       
-      <div class="panel-title" style="margin-top: 20px;">
-        📦 النسخ الاحتياطي الكامل (البيانات والمرفقات)
-      </div>
+      <div class="panel-title" style="margin-top: 20px;">📦 النسخ الاحتياطي الكامل</div>
       <button id="btn-export-full-data" class="btn primary">📤 تصدير كامل البيانات</button>
       <input type="file" id="input-import-full-data" style="display:none;" accept=".json">
       <button id="btn-import-full-data" class="btn danger">📥 استيراد كامل البيانات</button>
 
       <div class="divider"></div>
       
-      <div class="panel-title" style="margin-top: 20px;">
-        النسخ الاحتياطي (الفهرس فقط)
-      </div>
-      <button id="admin-export-meta" class="btn neutral">📤 تصدير الفهرس (Meta)</button>
-      <button id="admin-import-meta" class="btn neutral">📥 استيراد الفهرس (Meta)</button>
-      
-      <div class="divider"></div>
-      
-      <div class="panel-title" style="margin-top: 20px;">
-        إعدادات الأمان
-      </div>
+      <div class="panel-title" style="margin-top: 20px;">إعدادات الأمان</div>
       <button id="btn-set-password" class="btn neutral">🔑 تعيين/تغيير كلمة المرور</button>
       <button id="btn-reset-password" class="btn danger">🗑️ مسح كلمة المرور</button>
       
       <div class="divider"></div>
-
       <button id="admin-close" class="btn neutral">إغلاق</button>
     </div>
   </div>
 
   <div id="editor-modal" class="modal">
     <div class="modal-content">
-      <div id="editor-title" class="panel-title"></div>
+      <div id="editor-title" class="panel-title">تعديل المادة</div>
       <input type="text" id="editor-name" placeholder="الاسم/العنوان" />
       <input type="text" id="editor-icon" placeholder="الأيقونة (مثل: ⚖️)" />
       <textarea id="editor-content" rows="10" placeholder="محتوى المادة (يدعم HTML)"></textarea>
@@ -143,21 +128,21 @@
     </div>
   </div>
 
-  <div id="view-attachments-modal" class="modal">
-    <div class="modal-content">
-      <div class="panel-title">📎 المرفقات الحالية</div>
-      <div id="attachments-list-edit"></div>
-      <button id="view-attachments-close" class="btn neutral">إغلاق</button>
-    </div>
-  </div>
-
   <div id="trash-view-modal" class="modal">
     <div class="modal-content">
       <div class="panel-title">🗑️ سلة المحذوفات</div>
       <div id="trash-list-content" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px;">
-        </div>
+          </div>
       <button id="trash-view-close" class="btn neutral" onclick="document.getElementById('trash-view-modal').classList.remove('show')">إغلاق</button>
     </div>
+  </div>
+
+  <div id="content-manager-area" class="modal-content" style="display:none; margin: 20px auto; max-width: 800px; border: 1px solid #d4af37;">
+    <div class="panel-title">🧩 لوحة تحرير الفهرس</div>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button onclick="openTrashModal()" class="btn neutral">🗑️ سلة المحذوفات</button>
+    </div>
+    <div id="editable-index"></div>
   </div>
 
   <div id="uploads-modal" class="modal">
@@ -168,13 +153,7 @@
     </div>
   </div>
 
-  <div id="content-manager-area" style="display:none">
-    <div class="panel-title">🧩 لوحة تحرير الفهرس</div>
-    <button onclick="openTrashModal()" class="btn neutral" style="margin-bottom: 10px;">🗑️ فتح سلة المحذوفات</button>
-    <div id="editable-index"></div>
-  </div>
-
-  <div class="contact-form-card">
+  <div class="contact-form-card" style="margin-top: 50px;">
     <div class="panel-title">📨 مراسلة الإدارة</div>
     <input type="text" id="visitor-name" placeholder="اسمك (اختياري)" />
     <textarea id="visitor-message" rows="4" placeholder="رسالتك..."></textarea>
