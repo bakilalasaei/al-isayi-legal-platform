@@ -135,7 +135,7 @@
         <button id="btn-view-attachments" class="btn neutral">عرض المرفقات (0)</button>
       </div>
 
-      <button id="btn-delete-item" class="btn danger">🗑️ حذف المادة/التصنيف</button>
+      <button id="btn-delete-item" class="btn danger">🗑️ نقل إلى سلة المحذوفات</button>
       <div class="divider"></div>
 
       <button id="editor-save" class="btn primary">حفظ</button>
@@ -151,6 +151,15 @@
     </div>
   </div>
 
+  <div id="trash-view-modal" class="modal">
+    <div class="modal-content">
+      <div class="panel-title">🗑️ سلة المحذوفات</div>
+      <div id="trash-list-content" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px;">
+        </div>
+      <button id="trash-view-close" class="btn neutral" onclick="document.getElementById('trash-view-modal').classList.remove('show')">إغلاق</button>
+    </div>
+  </div>
+
   <div id="uploads-modal" class="modal">
     <div class="modal-content">
       <div class="panel-title">📬 المرسلات الواردة</div>
@@ -161,6 +170,7 @@
 
   <div id="content-manager-area" style="display:none">
     <div class="panel-title">🧩 لوحة تحرير الفهرس</div>
+    <button onclick="openTrashModal()" class="btn neutral" style="margin-bottom: 10px;">🗑️ فتح سلة المحذوفات</button>
     <div id="editable-index"></div>
   </div>
 
