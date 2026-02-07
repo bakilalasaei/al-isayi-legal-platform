@@ -52,6 +52,7 @@ function getObjectStore(storeName, mode) {
 function saveFile(id, file) {
   return new Promise((res, rej) => {
     const store = getObjectStore(FILE_STORE, 'readwrite');
+    // نحفظ الملف باسمه الأصلي ونوعه الأصلي
     const rq = store.put({ id, data: file, type: file.type, name: file.name });
     rq.onsuccess = () => res(true);
     rq.onerror = (e) => rej(e.target.error);
@@ -76,6 +77,7 @@ function deleteFile(id) {
     });
 }
 
+// باقي وظائف IndexedDB للمراسلات كما هي دون تغيير
 function saveUpload(uploadData) {
   return new Promise((res, rej) => {
     const store = getObjectStore(UPLOAD_STORE, 'readwrite');
@@ -276,6 +278,7 @@ function renderAttachments(files) {
     const viewTag = document.createElement('a');
     viewTag.className = 'attachment-tag';
     viewTag.href = '#';
+    // استخدام الاسم الأصلي المخزن
     viewTag.innerText = `📎 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
     
     viewTag.onclick = async (e) => {
@@ -284,6 +287,7 @@ function renderAttachments(files) {
       if (fileRecord) {
         const blob = fileRecord.data;
         const url = URL.createObjectURL(blob);
+        // فتح في نافذة جديدة - المتصفح سيحاول العرض أو التحميل حسب نوع الملف
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 10000);
       }
@@ -355,6 +359,7 @@ function renderAdminIndexList() {
 function handleShowIndexManager() {
     if (sessionStorage.getItem(ADMINSESSIONKEY) !== 'active') return showMessage('يجب تسجيل الدخول.', 'error');
     
+    // التحديث المطلوب: إغلاق نافذة الإدارة عند تفعيل التحرير
     document.getElementById('admin-modal').classList.remove('show');
 
     const area = document.getElementById('content-manager-area');
@@ -475,6 +480,7 @@ async function handleAttachFiles() {
         if (!currentEditingItem.files) currentEditingItem.files = [];
         for (const f of Array.from(e.target.files)) {
             const id = 'f-' + Date.now() + Math.random().toString(36).substr(2,5);
+            // حفظ الملف باسمه الأصلي
             await saveFile(id, f);
             currentEditingItem.files.push({ id, name: f.name, size: f.size, type: f.type });
         }
