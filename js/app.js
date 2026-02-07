@@ -52,7 +52,6 @@ function getObjectStore(storeName, mode) {
 function saveFile(id, file) {
   return new Promise((res, rej) => {
     const store = getObjectStore(FILE_STORE, 'readwrite');
-    // نحفظ الملف باسمه الأصلي ونوعه الأصلي
     const rq = store.put({ id, data: file, type: file.type, name: file.name });
     rq.onsuccess = () => res(true);
     rq.onerror = (e) => rej(e.target.error);
@@ -77,7 +76,6 @@ function deleteFile(id) {
     });
 }
 
-// باقي وظائف IndexedDB للمراسلات كما هي دون تغيير
 function saveUpload(uploadData) {
   return new Promise((res, rej) => {
     const store = getObjectStore(UPLOAD_STORE, 'readwrite');
@@ -183,9 +181,10 @@ function loadMeta() { const data = localStorage.getItem(META_KEY); if (data) met
 function ensureDefaults() {
   loadMeta();
   if (!meta.types || meta.types.length === 0) {
-    meta = { password: null, types: [{ id: 't1', icon: '⚖️', name: 'قانون العمل', items: [{ id: 't1-i1', name: 'المادة (1): أحكام عامة', content: '<h2>نص قانوني تجريبي</h2>', files: [], children: [] }] }], uploads: [] };
+    meta = { password: null, types: [{ id: 't1', icon: '⚖️', name: 'قانون العمل', items: [{ id: 't1-i1', name: 'المادة (1): أحكام عامة', content: '<h2>نص قانوني تجريبي</h2>', files: [], children: [] }] }], trash: [] };
     saveMeta();
   }
+  if (!meta.trash) { meta.trash = []; saveMeta(); }
 }
 
 let parentCollection = null; 
@@ -250,7 +249,7 @@ function highlightSearch(text, term) {
 }
 
 // ------------------------------
-// 6. عرض المحتوى والمرفقات (تحسين الورد والأسماء)
+// 6. عرض المحتوى والمرفقات
 // ------------------------------
 function openItem(itemId) {
   const item = getItemById(itemId);
@@ -278,7 +277,6 @@ function renderAttachments(files) {
     const viewTag = document.createElement('a');
     viewTag.className = 'attachment-tag';
     viewTag.href = '#';
-    // استخدام الاسم الأصلي المخزن
     viewTag.innerText = `📎 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
     
     viewTag.onclick = async (e) => {
@@ -287,7 +285,6 @@ function renderAttachments(files) {
       if (fileRecord) {
         const blob = fileRecord.data;
         const url = URL.createObjectURL(blob);
-        // فتح في نافذة جديدة - المتصفح سيحاول العرض أو التحميل حسب نوع الملف
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 10000);
       }
@@ -308,7 +305,7 @@ function renderAttachments(files) {
 }
 
 // ------------------------------
-// 7. وظائف الإدارة والتحقق (محفوظة)
+// 7. وظائف الإدارة والتحقق
 // ------------------------------
 function openAdminModal() {
     if (sessionStorage.getItem(ADMINSESSIONKEY) === 'active') {
@@ -354,14 +351,11 @@ function renderAdminIndexList() {
 }
 
 // ------------------------------
-// 8. تحرير الفهرس والمرفقات (تحديث: مع إغلاق الإدارة)
+// 8. تحرير الفهرس وسلة المحذوفات (تعديل دقيق)
 // ------------------------------
 function handleShowIndexManager() {
     if (sessionStorage.getItem(ADMINSESSIONKEY) !== 'active') return showMessage('يجب تسجيل الدخول.', 'error');
-    
-    // التحديث المطلوب: إغلاق نافذة الإدارة عند تفعيل التحرير
     document.getElementById('admin-modal').classList.remove('show');
-
     const area = document.getElementById('content-manager-area');
     if (area.style.display === 'block') {
         area.style.display = 'none';
@@ -378,7 +372,12 @@ function handleShowIndexManager() {
 
 function renderEditableIndex() {
     const editableIndex = document.getElementById('editable-index');
-    editableIndex.innerHTML = '<button class="btn primary" onclick="addNewType()">➕ إضافة تصنيف جديد</button>';
+    editableIndex.innerHTML = `
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <button class="btn primary" onclick="addNewType()">➕ إضافة تصنيف جديد</button>
+            <button class="btn" style="background: #555;" onclick="openTrashModal()">🗑️ سلة المحذوفات (${meta.trash?.length || 0})</button>
+        </div>
+    `;
     meta.types.forEach(type => {
         const typeEl = document.createElement('div');
         typeEl.className = 'editable-type';
@@ -457,20 +456,71 @@ function closeEditorModal() { document.getElementById('editor-modal').classList.
 
 function deleteItemConfirmation(id) {
     const item = getItemById(id);
-    if (confirm(`حذف: ${item.name}؟`)) deleteCurrentItem(id);
+    if (confirm(`هل تريد نقل "${item.name}" إلى سلة المحذوفات؟`)) moveToTrash(id);
 }
 
-async function deleteCurrentItem(id) {
+// دالة النقل للسلة (تحل محل الحذف النهائي)
+function moveToTrash(id) {
     const item = getItemById(id);
     const parent = parentCollection;
     const index = parent.findIndex(i => i.id === id);
-    const fileDeletion = item.files?.map(f => deleteFile(f.id)) || [];
+    
+    if (!meta.trash) meta.trash = [];
+    item.deletedAt = new Date().toLocaleString('ar-SA');
+    meta.trash.push(item);
+    
     parent.splice(index, 1);
-    await Promise.all(fileDeletion);
     saveMeta();
     renderEditableIndex();
     renderPublicIndex();
-    showMessage('تم الحذف.');
+    showMessage('تم النقل للسلة.');
+}
+
+// دالة فتح واجهة السلة
+function openTrashModal() {
+    const listHtml = (meta.trash || []).map((item, i) => `
+        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #444; color:white;">
+            <div><b>${item.name}</b> <br><small style="color:gray;">حُذف في: ${item.deletedAt}</small></div>
+            <div>
+                <button onclick="restoreFromTrash(${i})" style="background:green; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">استعادة</button>
+                <button onclick="permanentDelete(${i})" style="background:red; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; margin-right:5px;">نهائي</button>
+            </div>
+        </div>
+    `).join('') || '<div style="color:gray; text-align:center; padding:20px;">السلة فارغة</div>';
+
+    const modal = document.createElement('div');
+    modal.id = 'trash-view-modal';
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; display:flex; align-items:center; justify-content:center;";
+    modal.innerHTML = `
+        <div style="background:#222; width:90%; max-width:500px; border-radius:10px; padding:20px; border:1px solid #d4af37;">
+            <h3 style="color:#d4af37; margin-top:0;">سلة المحذوفات</h3>
+            <div style="max-height:300px; overflow-y:auto;">${listHtml}</div>
+            <button onclick="this.parentElement.parentElement.remove()" style="width:100%; margin-top:15px; padding:10px; background:#d4af37; border:none; border-radius:5px; cursor:pointer;">إغلاق</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function restoreFromTrash(index) {
+    const item = meta.trash[index];
+    delete item.deletedAt;
+    meta.types[0].items.push(item); // استعادة لأول تصنيف
+    meta.trash.splice(index, 1);
+    saveMeta();
+    document.getElementById('trash-view-modal').remove();
+    renderEditableIndex();
+    showMessage('تمت الاستعادة.');
+}
+
+async function permanentDelete(index) {
+    if (!confirm('سيتم حذف الملفات المرفقة نهائياً. هل أنت متأكد؟')) return;
+    const item = meta.trash[index];
+    if (item.files) for (const f of item.files) await deleteFile(f.id);
+    meta.trash.splice(index, 1);
+    saveMeta();
+    document.getElementById('trash-view-modal').remove();
+    renderEditableIndex();
+    showMessage('حذف نهائي بنجاح.');
 }
 
 async function handleAttachFiles() {
@@ -480,13 +530,12 @@ async function handleAttachFiles() {
         if (!currentEditingItem.files) currentEditingItem.files = [];
         for (const f of Array.from(e.target.files)) {
             const id = 'f-' + Date.now() + Math.random().toString(36).substr(2,5);
-            // حفظ الملف باسمه الأصلي
             await saveFile(id, f);
             currentEditingItem.files.push({ id, name: f.name, size: f.size, type: f.type });
         }
         saveMeta();
         document.getElementById('btn-view-attachments').innerText = `عرض المرفقات (${currentEditingItem.files.length})`;
-        showMessage('تم الرفع بالأسماء الأصلية.');
+        showMessage('تم الرفع.');
     };
     input.click();
 }
@@ -516,7 +565,7 @@ async function removeAttachmentFromItem(fileId) {
 function closeViewAttachmentsModal() { document.getElementById('view-attachments-modal').classList.remove('show'); }
 
 // ------------------------------
-// 9. وظائف التواصل والمراسلات (محفوظة)
+// 9. التواصل والمراسلات
 // ------------------------------
 document.getElementById('submit-upload').onclick = async () => {
   const name = document.getElementById('visitor-name').value.trim();
@@ -587,7 +636,7 @@ async function deleteUploads() {
 }
 
 // ------------------------------
-// 10. التصدير والاستيراد (محفوظة)
+// 10. التصدير والاستيراد
 // ------------------------------
 async function exportFullData() {
     showMessage('جاري التصدير...');
@@ -598,23 +647,23 @@ async function exportFullData() {
     }
     const data = { version: '1.0', meta, files: filesData, uploads: await getAllUploads() };
     downloadData(JSON.stringify(data), `full_backup_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
-    showMessage('تم التصدير بنجاح.', 'success');
+    showMessage('تم التصدير.', 'success');
 }
 
 function startFullImport() { document.getElementById('input-import-full-data').click(); }
 
 async function handleFullImport(e) {
     const f = e.target.files[0];
-    if (!f || !confirm('سيتم استبدال البيانات الحالية. هل تريد الاستمرار؟')) return;
+    if (!f || !confirm('سيتم استبدال كل شيء. هل تستمر؟')) return;
     try {
         const d = JSON.parse(await readFileAsText(f));
         await clearAllFiles(); await clearUploads();
         meta = d.meta; saveMeta();
         for (const fd of d.files) await saveFile(fd.id, new Blob([b642buf(fd.data)], { type: fd.type }));
         for (const u of d.uploads) { const { key, ...ud } = u; await saveUpload(ud); }
-        showMessage('تم الاستيراد بنجاح. يرجى تحديث الصفحة.', 'success');
+        showMessage('استيراد ناجح.', 'success');
         renderPublicIndex();
-    } catch (err) { showMessage('خطأ في الاستيراد.', 'error'); }
+    } catch (err) { showMessage('خطأ استيراد.', 'error'); }
 }
 
 function exportMetaOnly() { downloadData(JSON.stringify(meta), 'meta_backup.json', 'application/json'); }
@@ -649,7 +698,7 @@ document.getElementById('btn-share-selected').onclick = async () => {
 };
 
 // ------------------------------
-// 12. إصلاح زر التثبيت PWA (تحسين إضافي)
+// 12. PWA
 // ------------------------------
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -659,19 +708,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 async function installApp() {
-    if (!deferredPrompt) {
-        showMessage('خاصية التثبيت غير متاحة حالياً في متصفحك.', 'error');
-        return;
-    }
+    if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') showMessage('شكراً لتثبيت التطبيق!');
     deferredPrompt = null;
     document.getElementById('btn-install').style.display = 'none';
 }
 
 // ------------------------------
-// 13. تشغيل النظام والربط النهائي
+// 13. تشغيل النظام
 // ------------------------------
 window.addEventListener('load', async () => {
   await openDB(); ensureDefaults(); renderPublicIndex();
@@ -704,12 +749,12 @@ window.addEventListener('load', async () => {
   };
 
   document.getElementById('btn-reset-password').onclick = () => {
-    if (confirm('هل أنت متأكد من مسح كلمة المرور؟ سيصبح الدخول متاحاً للجميع.')) {
+    if (confirm('هل أنت متأكد من مسح كلمة المرور؟')) {
         meta.password = null;
         saveMeta();
         sessionStorage.removeItem(ADMINSESSIONKEY);
         document.getElementById('admin-modal').classList.remove('show');
-        showMessage('تم مسح كلمة المرور بنجاح.');
+        showMessage('تم مسح كلمة المرور.');
     }
   };
 });
